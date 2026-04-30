@@ -7,12 +7,14 @@ import {
   BarChart3,
   LogOut,
   UtensilsCrossed,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/reports", icon: BarChart3, label: "Reports" },
+  { href: "/pricing", icon: CreditCard, label: "Subscription" },
 ];
 
 export default function WebSidebar({

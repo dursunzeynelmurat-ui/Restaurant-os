@@ -70,29 +70,44 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.pin || !credentials?.branchId) return null;
+        const enteredPin = credentials.pin as string;
+        const branchId = credentials.branchId as string;
+
         const db = createServerClient();
         const { data: branch } = await db
           .from("branches")
           .select("*")
-          .eq("id", credentials.branchId as string)
+          .eq("id", branchId)
           .single();
         if (!branch) return null;
-        const { data: user } = await db
+
+        // Fetch all active staff for this business (PINs are business-scoped)
+        // PINs are stored as bcrypt hashes — compare each until a match
+        const { data: staffList } = await db
           .from("users")
           .select("*")
-          .eq("pin", credentials.pin as string)
           .eq("business_id", branch.business_id)
           .eq("active", true)
-          .single();
-        if (!user) return null;
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email ?? "",
-          role: user.role as UserRole,
-          businessId: user.business_id,
-          branchId: credentials.branchId as string,
-        };
+          .not("pin_hash", "is", null);
+
+        if (!staffList?.length) return null;
+
+        // Compare entered PIN against each staff member's hash
+        for (const staff of staffList) {
+          if (!staff.pin_hash) continue;
+          const match = await bcrypt.compare(enteredPin, staff.pin_hash);
+          if (match) {
+            return {
+              id: staff.id,
+              name: staff.name,
+              email: staff.email ?? "",
+              role: staff.role as UserRole,
+              businessId: staff.business_id,
+              branchId,
+            };
+          }
+        }
+        return null;
       },
     }),
   ],

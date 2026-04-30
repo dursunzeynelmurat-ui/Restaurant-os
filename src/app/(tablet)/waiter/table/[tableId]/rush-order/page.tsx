@@ -175,6 +175,7 @@ export default function RushOrderPage() {
   const [draft, setDraft] = useState<Map<string, DraftItem>>(new Map());
   const [modifierTarget, setModifierTarget] = useState<null | (QuickMenuItem & { menu_item: MenuItem & { modifier_groups?: { modifier_group: ModifierGroup & { modifiers: Modifier[] } }[] } })>(null);
   const [sending, setSending] = useState(false);
+  const idempotencyKey = useRef(crypto.randomUUID());
 
   const { data: tableData } = useQuery({
     queryKey: ["table", tableId],
@@ -268,15 +269,17 @@ export default function RushOrderPage() {
 
       if (!addRes.ok) throw new Error("Failed to add items");
 
-      // Fire the order
+      // Fire the order with idempotency key to prevent duplicate tickets on retry
       const sendRes = await fetch(`/api/orders/${orderId}/send`, {
         method: "PATCH",
+        headers: { "x-idempotency-key": idempotencyKey.current },
       });
 
       if (!sendRes.ok) throw new Error("Failed to send order");
 
       toast.success("Order sent to kitchen & bar!");
       setDraft(new Map());
+      idempotencyKey.current = crypto.randomUUID(); // fresh key for next order
       qc.invalidateQueries({ queryKey: ["tables"] });
       qc.invalidateQueries({ queryKey: ["table", tableId] });
       router.push(`/waiter/table/${tableId}`);

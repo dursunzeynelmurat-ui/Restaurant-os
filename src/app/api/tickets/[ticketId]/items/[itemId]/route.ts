@@ -1,20 +1,25 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { NextRequest } from "next/server";
 import { createServerClient } from "@/lib/supabase";
+import { requireSession, ok, fail } from "@/lib/api-helpers";
 import { checkAndAggregateTicket } from "@/lib/ticket-router";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { ticketId: string; itemId: string } }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireSession(["KITCHEN", "BAR", "MANAGER", "OWNER"]);
+  if (!auth.ok) return auth.response;
+  const { ctx } = auth;
 
   const body = await req.json();
+  const status = body.status as string;
+
+  if (!["IN_PROGRESS", "DONE"].includes(status)) {
+    return fail("Status must be IN_PROGRESS or DONE");
+  }
+
   const db = createServerClient();
   const now = new Date().toISOString();
-
-  const status = body.status as string;
 
   const { data, error } = await db
     .from("ticket_items")
@@ -27,14 +32,12 @@ export async function PATCH(
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return fail(error.message, 500);
 
-  // If marking DONE, check if whole ticket is done
   if (status === "DONE") {
-    await checkAndAggregateTicket(params.ticketId, session.user.branchId);
+    await checkAndAggregateTicket(params.ticketId, ctx.branchId);
   }
 
-  // If marking IN_PROGRESS, update ticket status too
   if (status === "IN_PROGRESS") {
     await db
       .from("tickets")
@@ -43,5 +46,5 @@ export async function PATCH(
       .eq("status", "PENDING");
   }
 
-  return NextResponse.json({ data });
+  return ok(data);
 }

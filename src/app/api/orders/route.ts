@@ -1,31 +1,31 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { NextRequest } from "next/server";
 import { createServerClient } from "@/lib/supabase";
+import { requireSession, ok, fail } from "@/lib/api-helpers";
 import { CreateOrderSchema } from "@/lib/validators/order";
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireSession(["WAITER", "MANAGER", "OWNER"]);
+  if (!auth.ok) return auth.response;
+  const { ctx } = auth;
 
   const body = await req.json();
   const parsed = CreateOrderSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  if (!parsed.success) return fail(parsed.error.flatten().toString());
 
   const db = createServerClient();
   const { tableId, covers } = parsed.data;
-  const branchId = session.user.branchId;
 
-  // Check table belongs to branch
   const { data: table } = await db
     .from("tables")
     .select("id, status")
     .eq("id", tableId)
-    .eq("branch_id", branchId)
+    .eq("branch_id", ctx.branchId)
     .single();
 
-  if (!table) return NextResponse.json({ error: "Table not found" }, { status: 404 });
+  if (!table) return fail("Table not found", 404);
+  if (table.status === "BLOCKED") return fail("Table is blocked", 409);
 
-  // Check for existing active order
+  // Return existing active order instead of creating duplicate
   const { data: existing } = await db
     .from("orders")
     .select("id")
@@ -33,28 +33,26 @@ export async function POST(req: NextRequest) {
     .in("status", ["OPEN", "SENT", "PARTIALLY_READY", "READY", "SERVED"])
     .maybeSingle();
 
-  if (existing) return NextResponse.json({ data: existing });
+  if (existing) return ok(existing);
 
-  // Create order
   const { data: order, error } = await db
     .from("orders")
     .insert({
-      branch_id: branchId,
+      branch_id: ctx.branchId,
       table_id: tableId,
-      waiter_id: session.user.id,
+      waiter_id: ctx.userId,
       status: "OPEN",
       covers,
     })
     .select()
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return fail(error.message, 500);
 
-  // Update table status
   await db
     .from("tables")
     .update({ status: "OCCUPIED", updated_at: new Date().toISOString() })
     .eq("id", tableId);
 
-  return NextResponse.json({ data: order }, { status: 201 });
+  return ok(order, 201);
 }
