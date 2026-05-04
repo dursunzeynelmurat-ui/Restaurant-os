@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "Recipe Organizer",
+    "slug": "recipe-organizer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "recipeorganizer",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF6B35"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yourcompany.recipeorganizer",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Used to import recipe photos and screenshots.",
+        "NSCameraUsageDescription": "Used to capture photos of recipes.",
+        "NSPhotoLibraryAddUsageDescription": "Used to save recipe images."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#FF6B35"
+      },
+      "package": "com.yourcompany.recipeorganizer"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The app accesses your photos to let you import recipes.",
+          "cameraPermission": "The app accesses your camera to capture recipe photos."
+        }
+      ],
+      "expo-apple-authentication",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.1"
+          },
+          "android": {
+            "minSdkVersion": 24
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
