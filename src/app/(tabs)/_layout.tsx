@@ -1,13 +1,27 @@
 import { Text, View, ActivityIndicator } from 'react-native';
 import { Tabs, Redirect } from 'expo-router';
-import { Colors } from '@constants/theme';
+import { Colors, Shadow } from '@constants/theme';
 import { useAuth } from '@hooks/useAuth';
 
 function TabIcon({ emoji, color }: { emoji: string; color: string }) {
   const isActive = color === Colors.primary;
   return (
-    <View style={{ width: 24, height: 24, justifyContent: 'center', alignItems: 'center', opacity: isActive ? 1 : 0.5 }}>
-      <Text style={{ fontSize: 18 }}>{emoji}</Text>
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={
+          isActive
+            ? {
+                backgroundColor: Colors.primaryLight,
+                borderRadius: 12,
+                paddingHorizontal: 10,
+                paddingVertical: 3,
+                marginBottom: 1,
+              }
+            : { paddingHorizontal: 10, paddingVertical: 3, marginBottom: 1 }
+        }
+      >
+        <Text style={{ fontSize: 18, opacity: isActive ? 1 : 0.5 }}>{emoji}</Text>
+      </View>
     </View>
   );
 }
@@ -36,11 +50,16 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: Colors.surface,
           borderTopColor: Colors.border,
-          paddingBottom: 4,
+          borderTopWidth: 1,
+          paddingBottom: 6,
+          paddingTop: 4,
+          height: 60,
+          ...Shadow.md,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
+          fontSize: 10,
+          fontWeight: '600',
+          marginTop: 0,
         },
       }}
     >

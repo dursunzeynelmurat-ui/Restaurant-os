@@ -1,6 +1,6 @@
 import { Pressable, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Colors, Typography, Spacing, BorderRadius } from '@constants/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadow } from '@constants/theme';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'destructive';
 type Size = 'sm' | 'md' | 'lg';
@@ -33,7 +33,14 @@ export function Button({
 
   return (
     <Pressable
-      style={[styles.base, styles[variant], styles[`size_${size}`], (disabled || isLoading) && styles.disabled, style]}
+      style={({ pressed }) => [
+        styles.base,
+        styles[variant],
+        styles[`size_${size}`],
+        (disabled || isLoading) && styles.disabled,
+        pressed && !disabled && !isLoading && styles.pressed,
+        style,
+      ]}
       onPress={handlePress}
       disabled={disabled || isLoading}
     >
@@ -54,14 +61,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primary: { backgroundColor: Colors.primary },
-  secondary: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+  primary: { backgroundColor: Colors.primary, ...Shadow.sm },
+  secondary: { backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.border },
   ghost: { backgroundColor: 'transparent' },
   destructive: { backgroundColor: Colors.error },
   size_sm: { paddingVertical: Spacing.xs + 2, paddingHorizontal: Spacing.md },
   size_md: { paddingVertical: Spacing.sm + 4, paddingHorizontal: Spacing.lg },
   size_lg: { paddingVertical: Spacing.md, paddingHorizontal: Spacing.xl },
   disabled: { opacity: 0.5 },
+  pressed: { opacity: 0.88, transform: [{ scale: 0.97 }] },
   text: { fontWeight: '600' },
   text_primary: { color: '#fff' },
   text_secondary: { color: Colors.textPrimary },
