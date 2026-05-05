@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { extractRecipe } from '@lib/api/ai';
 import { useImportStore } from '@stores/importStore';
 import { router } from 'expo-router';
-import type { ImportSourceType } from '@types/recipe';
+import type { ImportSourceType } from '@app-types/recipe';
 
 export function useAIExtraction() {
   const { startExtraction, setExtracted, setError } = useImportStore();

@@ -1,5 +1,5 @@
 import { supabase } from '@lib/supabase';
-import type { Database } from '@types/database';
+import type { Database } from '@app-types/database';
 
 type GroceryItemInsert = Database['public']['Tables']['grocery_items']['Insert'];
 

@@ -1,5 +1,6 @@
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { supabase } from '@lib/supabase';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -25,11 +26,10 @@ export async function resetPassword(email: string) {
 }
 
 export async function signInWithApple() {
-  const { AppleAuthentication } = await import('expo-apple-authentication');
   const credential = await AppleAuthentication.signInAsync({
     requestedScopes: [
-      (await import('expo-apple-authentication')).AppleAuthenticationScope.FULL_NAME,
-      (await import('expo-apple-authentication')).AppleAuthenticationScope.EMAIL,
+      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+      AppleAuthentication.AppleAuthenticationScope.EMAIL,
     ],
   });
   return supabase.auth.signInWithIdToken({
@@ -49,9 +49,10 @@ export async function signInWithGoogle() {
 
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri);
   if (result.type === 'success') {
-    const { params } = AuthSession.parseRedirectUrl(result.url);
-    if (params.code) {
-      return supabase.auth.exchangeCodeForSession(params.code);
+    const url = new URL(result.url);
+    const code = url.searchParams.get('code');
+    if (code) {
+      return supabase.auth.exchangeCodeForSession(code);
     }
   }
 

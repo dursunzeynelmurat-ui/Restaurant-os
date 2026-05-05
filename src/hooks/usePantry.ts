@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@constants/queryKeys';
 import { fetchPantryItems, addPantryItem, updatePantryItem, deletePantryItem, clearPantry } from '@lib/api/pantry';
 import { useAuth } from './useAuth';
-import type { Database } from '@types/database';
+import type { Database } from '@app-types/database';
 
 type PantryInsert = Omit<Database['public']['Tables']['pantry_items']['Insert'], 'user_id'>;
 

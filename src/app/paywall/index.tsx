@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '@constants/theme';
-import { SUBSCRIPTION_TIERS } from '@types/subscription';
+import { SUBSCRIPTION_TIERS } from '@app-types/subscription';
 import { useSubscription } from '@hooks/useSubscription';
 
 export default function PaywallScreen() {

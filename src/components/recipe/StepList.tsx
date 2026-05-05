@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Typography, Spacing, BorderRadius } from '@constants/theme';
 import { formatMinutes } from '@lib/utils/format';
-import type { RecipeStep } from '@types/recipe';
+import type { RecipeStep } from '@app-types/recipe';
 
 interface StepListProps {
   steps: RecipeStep[];

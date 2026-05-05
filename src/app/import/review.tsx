@@ -27,6 +27,7 @@ export default function ImportReviewScreen() {
       Alert.alert('Error', 'Please enter a recipe title.');
       return;
     }
+    if (!extracted) return;
 
     createRecipe(
       {
@@ -41,6 +42,9 @@ export default function ImportReviewScreen() {
           difficulty: extracted.difficulty,
           source_type: sourceType === 'screenshot_base64' ? 'screenshot' : (sourceType as 'url' | 'text' | 'manual') ?? 'text',
           source_url: sourceUrl ?? null,
+          original_text: null,
+          cover_image_url: null,
+          is_favorite: false,
           language: extracted.language ?? 'en',
           tags: extracted.tags ?? [],
           dietary_info: extracted.dietary_info ?? [],

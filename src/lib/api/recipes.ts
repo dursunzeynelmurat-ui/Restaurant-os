@@ -1,6 +1,6 @@
 import { supabase } from '@lib/supabase';
-import type { RecipeFilters, RecipeDetail } from '@types/recipe';
-import type { Database } from '@types/database';
+import type { RecipeFilters, RecipeDetail, Collection } from '@app-types/recipe';
+import type { Database } from '@app-types/database';
 
 type RecipeInsert = Database['public']['Tables']['recipes']['Insert'];
 type IngredientInsert = Database['public']['Tables']['recipe_ingredients']['Insert'];
@@ -51,7 +51,7 @@ export async function fetchRecipeById(id: string): Promise<RecipeDetail> {
     ...recipeRes.data,
     ingredients: ingredientsRes.data ?? [],
     steps: stepsRes.data ?? [],
-    collections: collectionsRes.data?.map((rc) => rc.collections).flat().filter(Boolean) as never ?? [],
+    collections: (collectionsRes.data?.map((rc) => (rc as { collections: unknown }).collections).flat().filter(Boolean) ?? []) as Collection[],
   };
 }
 

@@ -1,6 +1,6 @@
 import { supabase } from '@lib/supabase';
-import type { ExtractedRecipe, RecipeSuggestion } from '@types/recipe';
-import type { GroceryItem } from '@types/grocery';
+import type { ExtractedRecipe, RecipeSuggestion } from '@app-types/recipe';
+import type { GroceryItem } from '@app-types/grocery';
 
 interface ExtractRecipeInput {
   content: string;

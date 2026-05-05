@@ -10,8 +10,8 @@ import {
   type CreateRecipeInput,
 } from '@lib/api/recipes';
 import { useAuth } from './useAuth';
-import type { RecipeFilters } from '@types/recipe';
-import type { Database } from '@types/database';
+import type { RecipeFilters } from '@app-types/recipe';
+import type { Database } from '@app-types/database';
 
 export function useRecipes(filters?: RecipeFilters) {
   const { user } = useAuth();

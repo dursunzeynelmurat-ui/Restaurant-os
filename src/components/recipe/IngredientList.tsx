@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Colors, Typography, Spacing, BorderRadius } from '@constants/theme';
 import { formatQuantity } from '@lib/utils/format';
 import { scaleQuantity } from '@lib/utils/scale';
-import type { RecipeIngredient } from '@types/recipe';
+import type { RecipeIngredient } from '@app-types/recipe';
 
 interface IngredientListProps {
   ingredients: RecipeIngredient[];

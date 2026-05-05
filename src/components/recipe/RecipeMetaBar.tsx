@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Typography, Spacing, BorderRadius } from '@constants/theme';
 import { formatMinutes } from '@lib/utils/format';
-import type { Recipe } from '@types/recipe';
+import type { Recipe } from '@app-types/recipe';
 
 interface RecipeMetaBarProps {
   recipe: Pick<Recipe, 'prep_time_minutes' | 'cook_time_minutes' | 'total_time_minutes' | 'difficulty' | 'servings'>;

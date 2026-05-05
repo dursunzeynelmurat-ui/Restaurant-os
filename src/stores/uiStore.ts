@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { RecipeFilters } from '@types/recipe';
+import type { RecipeFilters } from '@app-types/recipe';
 
 interface UIState {
   recipeViewMode: 'grid' | 'list';

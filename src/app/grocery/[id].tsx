@@ -3,7 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '@constants/theme';
 import { useGroceryList, useToggleGroceryItem, useAddGroceryItems } from '@hooks/useGroceryLists';
-import { GROCERY_CATEGORY_LABELS } from '@types/grocery';
+import { GROCERY_CATEGORY_LABELS } from '@app-types/grocery';
 import { useState } from 'react';
 
 export default function GroceryListScreen() {

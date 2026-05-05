@@ -5,7 +5,7 @@ import { Colors, Typography, Spacing, BorderRadius } from '@constants/theme';
 import { useCollectionDetail } from '@hooks/useCollections';
 import { RecipeCard } from '@components/recipe/RecipeCard';
 import { EmptyState } from '@components/ui/EmptyState';
-import type { Recipe } from '@types/recipe';
+import type { Recipe } from '@app-types/recipe';
 
 export default function CollectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

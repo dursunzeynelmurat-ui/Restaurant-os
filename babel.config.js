@@ -13,7 +13,7 @@ module.exports = function (api) {
             '@lib': './src/lib',
             '@hooks': './src/hooks',
             '@stores': './src/stores',
-            '@types': './src/types',
+            '@app-types': './src/types',
             '@constants': './src/constants',
           },
         },

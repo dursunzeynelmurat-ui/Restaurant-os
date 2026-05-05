@@ -3,7 +3,7 @@ import { useAuth } from './useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@constants/queryKeys';
 import { supabase } from '@lib/supabase';
-import { AI_LIMITS } from '@types/subscription';
+import { AI_LIMITS } from '@app-types/subscription';
 
 export function useSubscription() {
   const { user } = useAuth();

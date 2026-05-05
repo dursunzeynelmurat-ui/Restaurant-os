@@ -1,4 +1,4 @@
-import type { RecipeFilters } from '@types/recipe';
+import type { RecipeFilters } from '@app-types/recipe';
 
 export const queryKeys = {
   user: {

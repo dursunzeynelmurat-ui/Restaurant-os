@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { computeScaleFactor, scaleQuantity } from '@lib/utils/scale';
-import type { RecipeIngredient } from '@types/recipe';
+import type { RecipeIngredient } from '@app-types/recipe';
 
 export function useServingScaler(originalServings: number | null | undefined) {
   const [currentServings, setCurrentServings] = useState(originalServings ?? 2);

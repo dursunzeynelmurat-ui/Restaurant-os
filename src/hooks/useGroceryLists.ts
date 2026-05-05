@@ -11,7 +11,7 @@ import {
   archiveGroceryList,
 } from '@lib/api/grocery';
 import { useAuth } from './useAuth';
-import type { Database } from '@types/database';
+import type { Database } from '@app-types/database';
 
 type GroceryItemInsert = Omit<
   Database['public']['Tables']['grocery_items']['Insert'],

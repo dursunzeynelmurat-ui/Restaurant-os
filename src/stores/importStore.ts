@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ExtractedRecipe, ImportSourceType } from '@types/recipe';
+import type { ExtractedRecipe, ImportSourceType } from '@app-types/recipe';
 
 type ImportStatus = 'idle' | 'extracting' | 'done' | 'error';
 

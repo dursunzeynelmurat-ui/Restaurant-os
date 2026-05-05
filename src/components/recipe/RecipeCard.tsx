@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '@constants/theme';
 import { Badge } from '@components/ui/Badge';
 import { formatMinutes } from '@lib/utils/format';
-import type { Recipe } from '@types/recipe';
+import type { Recipe } from '@app-types/recipe';
 
 interface RecipeCardProps {
   recipe: Recipe;

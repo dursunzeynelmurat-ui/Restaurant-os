@@ -21,7 +21,7 @@ export async function fetchCollectionById(id: string) {
   if (collectionRes.error) throw collectionRes.error;
   return {
     ...collectionRes.data,
-    recipes: recipesRes.data?.map((rc) => rc.recipes).flat().filter(Boolean) ?? [],
+    recipes: recipesRes.data?.map((rc) => (rc as { recipes: unknown }).recipes).flat().filter(Boolean) ?? [],
   };
 }
 

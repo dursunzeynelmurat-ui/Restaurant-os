@@ -1,4 +1,15 @@
 import { supabase } from '@lib/supabase';
+import type { Database } from '@app-types/database';
+
+type MealPlanItemRow = Database['public']['Tables']['meal_plan_items']['Row'];
+export type MealPlanItemWithRecipe = MealPlanItemRow & {
+  recipes?: {
+    id: string;
+    title: string;
+    cover_image_url: string | null;
+    total_time_minutes: number | null;
+  } | null;
+};
 
 export async function fetchMealPlan(userId: string, weekStartDate: string) {
   const { data: plan } = await supabase
@@ -10,7 +21,7 @@ export async function fetchMealPlan(userId: string, weekStartDate: string) {
 
   if (!plan) return null;
 
-  const { data: items, error } = await supabase
+  const { data: rawItems, error } = await supabase
     .from('meal_plan_items')
     .select('*, recipes(id, title, cover_image_url, total_time_minutes)')
     .eq('meal_plan_id', plan.id)
@@ -18,7 +29,8 @@ export async function fetchMealPlan(userId: string, weekStartDate: string) {
     .order('meal_type');
 
   if (error) throw error;
-  return { ...plan, items: items ?? [] };
+  const items = (rawItems ?? []) as MealPlanItemWithRecipe[];
+  return { ...plan, items };
 }
 
 export async function upsertMealPlan(userId: string, weekStartDate: string) {

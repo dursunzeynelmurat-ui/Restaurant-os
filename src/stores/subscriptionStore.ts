@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { SubscriptionStatus } from '@types/subscription';
+import type { SubscriptionStatus } from '@app-types/subscription';
 
 interface SubscriptionState {
   status: SubscriptionStatus;

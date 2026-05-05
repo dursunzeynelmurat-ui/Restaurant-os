@@ -6,7 +6,7 @@ import { useAuth } from '@hooks/useAuth';
 import { useSubscription } from '@hooks/useSubscription';
 import { signOut } from '@lib/api/auth';
 import { useAuthStore } from '@stores/authStore';
-import { SUBSCRIPTION_TIERS } from '@types/subscription';
+import { SUBSCRIPTION_TIERS } from '@app-types/subscription';
 
 export default function ProfileScreen() {
   const { user } = useAuth();
