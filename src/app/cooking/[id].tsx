@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import * as KeepAwake from 'expo-keep-awake';
 import { Colors, Typography, Spacing, BorderRadius } from '@constants/theme';
 import { useRecipeDetail } from '@hooks/useRecipes';
 import { useCookingStore } from '@stores/cookingStore';
-import { formatMinutes } from '@lib/utils/format';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+import { StepProgressBar } from '@components/cooking/StepProgressBar';
+import { CookingStepCard } from '@components/cooking/CookingStepCard';
 
 export default function CookingModeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -54,12 +53,6 @@ export default function CookingModeScreen() {
     return () => clearInterval(timerRef.current);
   }, [timerRunning, timerRemaining]);
 
-  function formatTime(seconds: number): string {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  }
-
   function handleFinish() {
     endCooking();
     router.replace(`/recipe/${id}`);
@@ -68,14 +61,13 @@ export default function CookingModeScreen() {
   if (!recipe || steps.length === 0) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={{ ...Typography.body, color: '#fff', padding: Spacing.lg }}>Loading...</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={handleFinish}>
           <Text style={styles.exitText}>✕ Exit</Text>
@@ -84,30 +76,15 @@ export default function CookingModeScreen() {
         <Text style={styles.servingsText}>{scaledServings} servings</Text>
       </View>
 
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={[styles.progressFill, { width: `${((currentStepIndex + 1) / steps.length) * 100}%` }]} />
-      </View>
-      <Text style={styles.stepCounter}>Step {currentStepIndex + 1} of {steps.length}</Text>
+      <StepProgressBar currentIndex={currentStepIndex} total={steps.length} />
 
-      {/* Step Content */}
-      <View style={styles.stepContainer}>
-        <Text style={styles.stepInstruction}>{currentStep?.instruction}</Text>
+      <CookingStepCard
+        instruction={currentStep?.instruction ?? ''}
+        timerRemaining={timerRemaining}
+        timerRunning={timerRunning}
+        onToggleTimer={() => setTimerRunning((r) => !r)}
+      />
 
-        {timerRemaining !== null && (
-          <View style={styles.timerContainer}>
-            <Text style={styles.timerText}>{formatTime(timerRemaining)}</Text>
-            <Pressable
-              style={[styles.timerButton, timerRunning && styles.timerButtonActive]}
-              onPress={() => setTimerRunning((r) => !r)}
-            >
-              <Text style={styles.timerButtonText}>{timerRunning ? '⏸ Pause' : '▶ Start Timer'}</Text>
-            </Pressable>
-          </View>
-        )}
-      </View>
-
-      {/* Navigation */}
       <View style={styles.navContainer}>
         <Pressable
           style={[styles.navButton, isFirst && styles.navButtonDisabled]}
@@ -133,6 +110,7 @@ export default function CookingModeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#1a1a1a' },
+  loadingText: { ...Typography.body, color: '#fff', padding: Spacing.lg },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -141,33 +119,14 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
   },
   exitText: { ...Typography.body, color: 'rgba(255,255,255,0.6)' },
-  recipeName: { ...Typography.bodySmallMedium, color: '#fff', flex: 1, textAlign: 'center', marginHorizontal: Spacing.sm },
-  servingsText: { ...Typography.bodySmall, color: 'rgba(255,255,255,0.6)' },
-  progressContainer: { height: 4, backgroundColor: 'rgba(255,255,255,0.15)', marginHorizontal: Spacing.lg, borderRadius: 2 },
-  progressFill: { height: '100%', backgroundColor: Colors.primary, borderRadius: 2 },
-  stepCounter: { ...Typography.caption, color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: Spacing.xs, marginBottom: Spacing.lg },
-  stepContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
-    gap: Spacing.xl,
-  },
-  stepInstruction: {
-    ...Typography.cookingStep,
+  recipeName: {
+    ...Typography.bodySmallMedium,
     color: '#fff',
+    flex: 1,
     textAlign: 'center',
-    lineHeight: 36,
+    marginHorizontal: Spacing.sm,
   },
-  timerContainer: { alignItems: 'center', gap: Spacing.md },
-  timerText: { fontSize: 48, fontWeight: '700', color: Colors.primary, fontVariant: ['tabular-nums'] },
-  timerButton: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xl,
-    borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-  },
-  timerButtonActive: { backgroundColor: Colors.primaryDark },
-  timerButtonText: { ...Typography.bodyMedium, color: '#fff' },
+  servingsText: { ...Typography.bodySmall, color: 'rgba(255,255,255,0.6)' },
   navContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',

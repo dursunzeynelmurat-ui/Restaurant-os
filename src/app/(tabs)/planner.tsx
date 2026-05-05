@@ -6,11 +6,10 @@ import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '@constants/theme';
 import { useMealPlan, useCurrentWeekStart, useRemoveMealPlanItem } from '@hooks/useMealPlan';
 import { useGenerateGroceryFromPlan } from '@hooks/useGroceryLists';
-import { EmptyState } from '@components/ui/EmptyState';
+import { MealSlot } from '@components/planner/MealSlot';
 import type { MealPlanItemWithRecipe } from '@lib/api/mealPlan';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'] as const;
-const MEAL_LABELS = { breakfast: '☀️ Breakfast', lunch: '🌤️ Lunch', dinner: '🌙 Dinner' };
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function PlannerScreen() {
@@ -91,29 +90,14 @@ export default function PlannerScreen() {
               <Text style={styles.dayNumber}>{format(new Date(date), 'd')}</Text>
             </View>
 
-            {MEAL_TYPES.map((mealType) => {
-              const items = getItemsForSlot(date, mealType);
-              return (
-                <View key={mealType} style={styles.mealSlot}>
-                  <Text style={styles.mealLabel}>{MEAL_LABELS[mealType]}</Text>
-                  {items.length === 0 ? (
-                    <Text style={styles.emptySlot}>+ Add</Text>
-                  ) : (
-                    items.map((item) => (
-                      <Pressable
-                        key={item.id}
-                        style={styles.mealCard}
-                        onLongPress={() => removeItem(item.id)}
-                      >
-                        <Text style={styles.mealCardText} numberOfLines={2}>
-                          {(item as { recipes?: { title?: string } }).recipes?.title ?? 'Recipe'}
-                        </Text>
-                      </Pressable>
-                    ))
-                  )}
-                </View>
-              );
-            })}
+            {MEAL_TYPES.map((mealType) => (
+              <MealSlot
+                key={mealType}
+                mealType={mealType}
+                items={getItemsForSlot(date, mealType) as MealPlanItemWithRecipe[]}
+                onRemoveItem={removeItem}
+              />
+            ))}
           </View>
         ))}
       </ScrollView>
@@ -156,24 +140,6 @@ const styles = StyleSheet.create({
   },
   dayName: { ...Typography.captionMedium, color: 'rgba(255,255,255,0.8)' },
   dayNumber: { ...Typography.h4, color: '#fff' },
-  mealSlot: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.sm,
-    padding: Spacing.xs + 2,
-    marginBottom: Spacing.xs,
-    minHeight: 64,
-    borderWidth: 1,
-    borderColor: Colors.borderLight,
-  },
-  mealLabel: { ...Typography.caption, color: Colors.textMuted, marginBottom: 4 },
-  emptySlot: { ...Typography.bodySmall, color: Colors.textMuted, textAlign: 'center', marginTop: Spacing.xs },
-  mealCard: {
-    backgroundColor: Colors.primaryLight,
-    borderRadius: BorderRadius.xs,
-    padding: Spacing.xs,
-    marginTop: 4,
-  },
-  mealCardText: { ...Typography.caption, color: Colors.primaryDark },
   generateBtn: {
     marginHorizontal: Spacing.lg,
     marginBottom: Spacing.sm,

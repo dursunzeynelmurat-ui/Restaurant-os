@@ -1,10 +1,10 @@
-import { View, Text, StyleSheet, FlatList, Pressable, TextInput, Alert } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, FlatList, Pressable, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Colors, Typography, Spacing, BorderRadius, Shadow } from '@constants/theme';
+import { Colors, Typography, Spacing, BorderRadius } from '@constants/theme';
 import { useGroceryList, useToggleGroceryItem, useAddGroceryItems } from '@hooks/useGroceryLists';
-import { GROCERY_CATEGORY_LABELS } from '@app-types/grocery';
-import { useState } from 'react';
+import { CategorySection } from '@components/grocery/CategorySection';
 
 export default function GroceryListScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -42,7 +42,6 @@ export default function GroceryListScreen() {
         </View>
       </View>
 
-      {/* Add item */}
       <View style={styles.addRow}>
         <TextInput
           style={styles.addInput}
@@ -65,25 +64,11 @@ export default function GroceryListScreen() {
         onRefresh={refetch}
         refreshing={isRefetching}
         renderItem={({ item: [category, categoryItems] }) => (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              {GROCERY_CATEGORY_LABELS[category as keyof typeof GROCERY_CATEGORY_LABELS] ?? category}
-            </Text>
-            {categoryItems.map((item) => (
-              <Pressable
-                key={item.id}
-                style={styles.itemRow}
-                onPress={() => toggleItem({ id: item.id, isChecked: !item.is_checked })}
-              >
-                <View style={[styles.checkbox, item.is_checked && styles.checkboxChecked]}>
-                  {item.is_checked && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-                <Text style={[styles.itemName, item.is_checked && styles.itemChecked]}>
-                  {item.quantity != null ? `${item.quantity} ${item.unit ?? ''}`.trim() + ' ' : ''}{item.name}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+          <CategorySection
+            category={category}
+            items={categoryItems}
+            onToggle={(itemId, isChecked) => toggleItem({ id: itemId, isChecked })}
+          />
         )}
       />
     </SafeAreaView>
@@ -130,27 +115,4 @@ const styles = StyleSheet.create({
   },
   addButtonText: { fontSize: 22, color: '#fff' },
   list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xl },
-  section: { marginBottom: Spacing.lg },
-  sectionTitle: { ...Typography.bodySmallMedium, color: Colors.textMuted, marginBottom: Spacing.xs, textTransform: 'uppercase', fontSize: 11, letterSpacing: 0.5 },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: BorderRadius.xs + 2,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  checkmark: { color: '#fff', fontSize: 12, fontWeight: '700' },
-  itemName: { ...Typography.body, color: Colors.textPrimary, flex: 1 },
-  itemChecked: { textDecorationLine: 'line-through', color: Colors.textMuted },
 });

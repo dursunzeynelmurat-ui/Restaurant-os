@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '@constants/theme';
 import { usePantry, useAddPantryItem, useDeletePantryItem } from '@hooks/usePantry';
 import { EmptyState } from '@components/ui/EmptyState';
+import { PantryItemRow } from '@components/pantry/PantryItemRow';
 
 export default function PantryScreen() {
   const [newItem, setNewItem] = useState('');
@@ -76,16 +77,7 @@ export default function PantryScreen() {
           onRefresh={refetch}
           refreshing={isRefetching}
           renderItem={({ item }) => (
-            <View style={styles.itemRow}>
-              <Text style={styles.itemEmoji}>🥘</Text>
-              <Text style={styles.itemName}>{item.name}</Text>
-              {item.quantity && item.unit && (
-                <Text style={styles.itemQty}>{item.quantity} {item.unit}</Text>
-              )}
-              <Pressable style={styles.deleteButton} onPress={() => handleDelete(item.id, item.name)}>
-                <Text style={styles.deleteText}>✕</Text>
-              </Pressable>
-            </View>
+            <PantryItemRow item={item} onDelete={handleDelete} />
           )}
         />
       )}
@@ -140,20 +132,4 @@ const styles = StyleSheet.create({
   cookText: { ...Typography.bodyMedium, color: '#fff', flex: 1 },
   chevron: { fontSize: 20, color: 'rgba(255,255,255,0.8)' },
   list: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xl },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 4,
-    marginBottom: Spacing.xs,
-    ...Shadow.sm,
-  },
-  itemEmoji: { fontSize: 18 },
-  itemName: { ...Typography.body, color: Colors.textPrimary, flex: 1 },
-  itemQty: { ...Typography.bodySmall, color: Colors.textMuted },
-  deleteButton: { padding: Spacing.xs },
-  deleteText: { ...Typography.bodySmall, color: Colors.textMuted },
 });

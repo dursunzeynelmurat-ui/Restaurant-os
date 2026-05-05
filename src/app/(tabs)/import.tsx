@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
@@ -7,8 +7,10 @@ import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '@constants/theme';
 import { useAIExtraction } from '@hooks/useAIExtraction';
 import { useSubscription } from '@hooks/useSubscription';
+import { ImportOptionCard, ImportRowCard } from '@components/import/ImportOptionCard';
+import { AIExtractionLoader } from '@components/import/AIExtractionLoader';
 
-type ImportMode = 'url' | 'text' | 'screenshot' | null;
+type ImportMode = 'url' | 'text' | null;
 
 export default function ImportScreen() {
   const [mode, setMode] = useState<ImportMode>(null);
@@ -51,79 +53,63 @@ export default function ImportScreen() {
       ]);
       return;
     }
-    const type = mode === 'url' ? 'url' : 'text';
-    extract({ content: inputValue.trim(), type, sourceUrl: mode === 'url' ? inputValue.trim() : undefined });
+    extract({ content: inputValue.trim(), type: mode === 'url' ? 'url' : 'text', sourceUrl: mode === 'url' ? inputValue.trim() : undefined });
   }
 
-  if (isPending) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingTitle}>Extracting Recipe...</Text>
-          <Text style={styles.loadingSubtitle}>AI is parsing ingredients and steps</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  if (isPending) return <AIExtractionLoader />;
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <Text style={styles.title}>Import Recipe</Text>
-        <Text style={styles.subtitle}>Paste a link, text, or upload a screenshot. We'll turn it into a clean recipe.</Text>
+        <Text style={styles.subtitle}>
+          Paste a link, text, or upload a screenshot. We'll turn it into a clean recipe.
+        </Text>
 
-        {status !== 'free' && (
-          <View style={styles.usageBar}>
-            <Text style={styles.usageText}>AI imports remaining: {remaining}</Text>
-          </View>
-        )}
-        {status === 'free' && (
-          <View style={styles.usageBar}>
-            <Text style={styles.usageText}>Free: {remaining} AI imports left this week</Text>
-          </View>
-        )}
-
-        {/* Import Options */}
-        <View style={styles.optionsGrid}>
-          {[
-            { key: 'url' as ImportMode, emoji: '🔗', title: 'Paste URL', desc: 'From any website' },
-            { key: 'text' as ImportMode, emoji: '📝', title: 'Paste Text', desc: 'Recipe text or caption' },
-          ].map((option) => (
-            <Pressable
-              key={option.key}
-              style={[styles.optionCard, mode === option.key && styles.optionCardActive]}
-              onPress={() => { setMode(option.key); setInputValue(''); }}
-            >
-              <Text style={styles.optionEmoji}>{option.emoji}</Text>
-              <Text style={styles.optionTitle}>{option.title}</Text>
-              <Text style={styles.optionDesc}>{option.desc}</Text>
-            </Pressable>
-          ))}
+        <View style={styles.usageBar}>
+          <Text style={styles.usageText}>
+            {status === 'free'
+              ? `Free: ${remaining} AI imports left this week`
+              : `AI imports remaining: ${remaining}`}
+          </Text>
         </View>
 
-        {/* Screenshot / Manual options */}
-        <View style={styles.otherOptions}>
-          <Pressable style={styles.otherCard} onPress={handlePickScreenshot}>
-            <Text style={styles.otherEmoji}>📷</Text>
-            <View style={styles.otherInfo}>
-              <Text style={styles.otherTitle}>Upload Screenshot</Text>
-              <Text style={styles.otherDesc}>Photo or screenshot of a recipe</Text>
-            </View>
-            <Text style={styles.chevron}>›</Text>
-          </Pressable>
-          <Pressable style={styles.otherCard} onPress={() => router.push('/import/manual')}>
-            <Text style={styles.otherEmoji}>✍️</Text>
-            <View style={styles.otherInfo}>
-              <Text style={styles.otherTitle}>Enter Manually</Text>
-              <Text style={styles.otherDesc}>Type a recipe yourself</Text>
-            </View>
-            <Text style={styles.chevron}>›</Text>
-          </Pressable>
+        {/* Primary options: URL / Text */}
+        <View style={styles.optionsGrid}>
+          <ImportOptionCard
+            emoji="🔗"
+            title="Paste URL"
+            desc="From any website"
+            isActive={mode === 'url'}
+            onPress={() => { setMode('url'); setInputValue(''); }}
+          />
+          <ImportOptionCard
+            emoji="📝"
+            title="Paste Text"
+            desc="Recipe text or caption"
+            isActive={mode === 'text'}
+            onPress={() => { setMode('text'); setInputValue(''); }}
+          />
+        </View>
+
+        {/* Secondary options: Screenshot / Manual */}
+        <View style={styles.rowOptions}>
+          <ImportRowCard
+            emoji="📷"
+            title="Upload Screenshot"
+            desc="Photo or screenshot of a recipe"
+            onPress={handlePickScreenshot}
+          />
+          <ImportRowCard
+            emoji="✍️"
+            title="Enter Manually"
+            desc="Type a recipe yourself"
+            onPress={() => router.push('/import/manual')}
+          />
         </View>
 
         {/* Text input area */}
-        {(mode === 'url' || mode === 'text') && (
+        {mode !== null && (
           <View style={styles.inputSection}>
             <TextInput
               style={[styles.textInput, mode === 'text' && styles.textArea]}
@@ -146,7 +132,7 @@ export default function ImportScreen() {
                 onPress={handleSubmit}
                 disabled={!inputValue.trim()}
               >
-                <Text style={styles.submitButtonText}>Extract Recipe</Text>
+                <Text style={styles.submitButtonText}>Extract Recipe →</Text>
               </Pressable>
             </View>
           </View>
@@ -163,43 +149,15 @@ const styles = StyleSheet.create({
   subtitle: { ...Typography.body, color: Colors.textSecondary, marginBottom: Spacing.md },
   usageBar: {
     backgroundColor: Colors.primaryLight,
-    borderRadius: BorderRadius.sm,
-    padding: Spacing.sm,
-    marginBottom: Spacing.lg,
-  },
-  usageText: { ...Typography.bodySmall, color: Colors.primaryDark, textAlign: 'center' },
-  optionsGrid: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
-  optionCard: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: Colors.border,
-    ...Shadow.sm,
-  },
-  optionCardActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
-  optionEmoji: { fontSize: 28, marginBottom: Spacing.xs },
-  optionTitle: { ...Typography.bodySmallMedium, color: Colors.textPrimary },
-  optionDesc: { ...Typography.caption, color: Colors.textMuted, textAlign: 'center' },
-  otherOptions: { gap: Spacing.sm, marginBottom: Spacing.lg },
-  otherCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    padding: Spacing.sm + 2,
+    marginBottom: Spacing.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
-    ...Shadow.sm,
+    borderColor: Colors.primary,
   },
-  otherEmoji: { fontSize: 24 },
-  otherInfo: { flex: 1 },
-  otherTitle: { ...Typography.bodyMedium, color: Colors.textPrimary },
-  otherDesc: { ...Typography.bodySmall, color: Colors.textSecondary },
-  chevron: { fontSize: 20, color: Colors.textMuted },
+  usageText: { ...Typography.bodySmall, color: Colors.primaryDark, textAlign: 'center', fontWeight: '500' },
+  optionsGrid: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
+  rowOptions: { gap: Spacing.sm, marginBottom: Spacing.lg },
   inputSection: { gap: Spacing.sm },
   textInput: {
     backgroundColor: Colors.surface,
@@ -214,20 +172,15 @@ const styles = StyleSheet.create({
   },
   textArea: { height: 160, textAlignVertical: 'top' },
   inputActions: { gap: Spacing.sm },
-  pasteButton: {
-    paddingVertical: Spacing.sm,
-    alignItems: 'center',
-  },
+  pasteButton: { paddingVertical: Spacing.sm, alignItems: 'center' },
   pasteButtonText: { ...Typography.bodySmall, color: Colors.primary },
   submitButton: {
     backgroundColor: Colors.primary,
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     alignItems: 'center',
+    ...Shadow.sm,
   },
   disabledButton: { opacity: 0.5 },
-  submitButtonText: { ...Typography.bodyMedium, color: '#fff', fontWeight: '600' },
-  loading: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.md },
-  loadingTitle: { ...Typography.h3, color: Colors.textPrimary },
-  loadingSubtitle: { ...Typography.body, color: Colors.textSecondary },
+  submitButtonText: { ...Typography.bodyMedium, color: '#fff', fontWeight: '700' },
 });
