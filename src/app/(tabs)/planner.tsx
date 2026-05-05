@@ -1,0 +1,160 @@
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { format, addDays, addWeeks } from 'date-fns';
+import { router } from 'expo-router';
+import { Colors, Typography, Spacing, BorderRadius, Shadow } from '@constants/theme';
+import { useMealPlan, useCurrentWeekStart, useRemoveMealPlanItem } from '@hooks/useMealPlan';
+import { useGenerateGroceryFromPlan } from '@hooks/useGroceryLists';
+import { MealSlot } from '@components/planner/MealSlot';
+import type { MealPlanItemWithRecipe } from '@lib/api/mealPlan';
+
+const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'] as const;
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+export default function PlannerScreen() {
+  const defaultWeekStart = useCurrentWeekStart();
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const weekStart = format(
+    addWeeks(new Date(defaultWeekStart), weekOffset),
+    'yyyy-MM-dd'
+  );
+  const weekEnd = format(addDays(new Date(weekStart), 6), 'yyyy-MM-dd');
+
+  const { data: mealPlan, isLoading } = useMealPlan(weekStart);
+  const { mutate: removeItem } = useRemoveMealPlanItem(weekStart);
+  const { mutate: generateGrocery, isPending: isGenerating } = useGenerateGroceryFromPlan();
+
+  const weekDates = Array.from({ length: 7 }, (_, i) =>
+    format(addDays(new Date(weekStart), i), 'yyyy-MM-dd')
+  );
+
+  function getItemsForSlot(date: string, mealType: string) {
+    return (mealPlan?.items ?? []).filter(
+      (item) => item.date === date && item.meal_type === mealType
+    );
+  }
+
+  function handleGenerateGrocery() {
+    const items = (mealPlan?.items ?? []) as MealPlanItemWithRecipe[];
+    const recipeIds = [...new Set(items.map((item) => item.recipe_id).filter(Boolean))] as string[];
+    if (recipeIds.length === 0) {
+      Alert.alert('No recipes', 'Add recipes to your meal plan first.');
+      return;
+    }
+    const weekLabel = format(new Date(weekStart), 'MMM d');
+    generateGrocery(
+      { recipeIds, weekLabel },
+      { onSuccess: (listId) => router.push(`/grocery/${listId}`) },
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Week Navigation */}
+      <View style={styles.weekNav}>
+        <Pressable style={styles.navButton} onPress={() => setWeekOffset((o) => o - 1)}>
+          <Text style={styles.navArrow}>‹</Text>
+        </Pressable>
+        <Text style={styles.weekLabel}>
+          {format(new Date(weekStart), 'MMM d')} – {format(new Date(weekEnd), 'MMM d, yyyy')}
+        </Text>
+        <Pressable style={styles.navButton} onPress={() => setWeekOffset((o) => o + 1)}>
+          <Text style={styles.navArrow}>›</Text>
+        </Pressable>
+      </View>
+
+      {/* Generate Grocery List */}
+      <Pressable
+        style={[styles.generateBtn, isGenerating && styles.generateBtnDisabled]}
+        onPress={handleGenerateGrocery}
+        disabled={isGenerating}
+      >
+        {isGenerating ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.generateBtnText}>🛒 Generate Grocery List</Text>
+        )}
+      </Pressable>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.calendarScroll}
+      >
+        {weekDates.map((date, index) => (
+          <View key={date} style={styles.dayColumn}>
+            <View style={styles.dayHeader}>
+              <Text style={styles.dayName}>{DAYS[index]}</Text>
+              <Text style={styles.dayNumber}>{format(new Date(date), 'd')}</Text>
+            </View>
+
+            {MEAL_TYPES.map((mealType) => (
+              <MealSlot
+                key={mealType}
+                mealType={mealType}
+                items={getItemsForSlot(date, mealType) as MealPlanItemWithRecipe[]}
+                onRemoveItem={removeItem}
+              />
+            ))}
+          </View>
+        ))}
+      </ScrollView>
+
+      <Text style={styles.hint}>Long press a meal to remove it</Text>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  weekNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  navButton: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surfaceAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  navArrow: { fontSize: 20, color: Colors.textPrimary },
+  weekLabel: { ...Typography.bodyMedium, color: Colors.textPrimary },
+  calendarScroll: { paddingHorizontal: Spacing.sm, paddingBottom: Spacing.xl },
+  dayColumn: {
+    width: 140,
+    marginHorizontal: Spacing.xs,
+  },
+  dayHeader: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.xs,
+  },
+  dayName: { ...Typography.captionMedium, color: 'rgba(255,255,255,0.8)' },
+  dayNumber: { ...Typography.h4, color: '#fff' },
+  generateBtn: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm + 2,
+    alignItems: 'center',
+    ...Shadow.sm,
+  },
+  generateBtnDisabled: { opacity: 0.6 },
+  generateBtnText: { ...Typography.bodyMedium, color: '#fff', fontWeight: '600' },
+  hint: {
+    ...Typography.caption,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    paddingBottom: Spacing.md,
+  },
+});
