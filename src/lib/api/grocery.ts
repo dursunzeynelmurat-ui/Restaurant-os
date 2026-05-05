@@ -1,4 +1,5 @@
 import { supabase } from '@lib/supabase';
+import { generateGroceryList } from '@lib/api/ai';
 import type { Database } from '@app-types/database';
 
 type GroceryItemInsert = Database['public']['Tables']['grocery_items']['Insert'];
@@ -58,4 +59,32 @@ export async function deleteGroceryList(id: string) {
 export async function archiveGroceryList(id: string) {
   const { error } = await supabase.from('grocery_lists').update({ status: 'archived' }).eq('id', id);
   if (error) throw error;
+}
+
+export async function generateGroceryListFromRecipes(
+  userId: string,
+  recipeIds: string[],
+  weekLabel: string,
+): Promise<string> {
+  const { data: ingredients, error } = await supabase
+    .from('recipe_ingredients')
+    .select('name, quantity, unit')
+    .in('recipe_id', recipeIds);
+  if (error) throw error;
+
+  const aiItems = await generateGroceryList({
+    recipe_ingredients: (ingredients ?? []).map((i) => ({
+      name: i.name,
+      quantity: i.quantity ?? undefined,
+      unit: i.unit ?? undefined,
+    })),
+  });
+
+  const list = await createGroceryList(userId, `Grocery – ${weekLabel}`);
+
+  if (aiItems.length > 0) {
+    await addGroceryItems(list.id, aiItems.map((item, i) => ({ ...item, order_index: i })));
+  }
+
+  return list.id;
 }

@@ -59,3 +59,27 @@ export async function generateGroceryList(
   if (error) throw error;
   return data?.items ?? [];
 }
+
+export interface IngredientSubstitute {
+  ingredient: string;
+  quantity: string;
+  notes: string;
+}
+
+interface SubstituteIngredientInput {
+  ingredient_name: string;
+  quantity?: number | null;
+  unit?: string | null;
+  recipe_title?: string | null;
+}
+
+export async function getIngredientSubstitution(
+  input: SubstituteIngredientInput
+): Promise<IngredientSubstitute[]> {
+  const { data, error } = await supabase.functions.invoke<{ substitutes: IngredientSubstitute[] }>(
+    'substitute-ingredient',
+    { body: input }
+  );
+  if (error) throw error;
+  return data?.substitutes ?? [];
+}

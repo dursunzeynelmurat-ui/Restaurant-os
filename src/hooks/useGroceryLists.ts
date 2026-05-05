@@ -9,6 +9,7 @@ import {
   deleteGroceryItem,
   deleteGroceryList,
   archiveGroceryList,
+  generateGroceryListFromRecipes,
 } from '@lib/api/grocery';
 import { useAuth } from './useAuth';
 import type { Database } from '@app-types/database';
@@ -73,6 +74,16 @@ export function useArchiveGroceryList() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: archiveGroceryList,
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.grocery.all }),
+  });
+}
+
+export function useGenerateGroceryFromPlan() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: ({ recipeIds, weekLabel }: { recipeIds: string[]; weekLabel: string }) =>
+      generateGroceryListFromRecipes(user!.id, recipeIds, weekLabel),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.grocery.all }),
   });
 }

@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { format, addDays, startOfWeek, addWeeks, subWeeks } from 'date-fns';
+import { format, addDays, addWeeks } from 'date-fns';
+import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '@constants/theme';
 import { useMealPlan, useCurrentWeekStart, useRemoveMealPlanItem } from '@hooks/useMealPlan';
+import { useGenerateGroceryFromPlan } from '@hooks/useGroceryLists';
 import { EmptyState } from '@components/ui/EmptyState';
+import type { MealPlanItemWithRecipe } from '@lib/api/mealPlan';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'] as const;
 const MEAL_LABELS = { breakfast: '☀️ Breakfast', lunch: '🌤️ Lunch', dinner: '🌙 Dinner' };
@@ -22,6 +25,7 @@ export default function PlannerScreen() {
 
   const { data: mealPlan, isLoading } = useMealPlan(weekStart);
   const { mutate: removeItem } = useRemoveMealPlanItem(weekStart);
+  const { mutate: generateGrocery, isPending: isGenerating } = useGenerateGroceryFromPlan();
 
   const weekDates = Array.from({ length: 7 }, (_, i) =>
     format(addDays(new Date(weekStart), i), 'yyyy-MM-dd')
@@ -30,6 +34,20 @@ export default function PlannerScreen() {
   function getItemsForSlot(date: string, mealType: string) {
     return (mealPlan?.items ?? []).filter(
       (item) => item.date === date && item.meal_type === mealType
+    );
+  }
+
+  function handleGenerateGrocery() {
+    const items = (mealPlan?.items ?? []) as MealPlanItemWithRecipe[];
+    const recipeIds = [...new Set(items.map((item) => item.recipe_id).filter(Boolean))] as string[];
+    if (recipeIds.length === 0) {
+      Alert.alert('No recipes', 'Add recipes to your meal plan first.');
+      return;
+    }
+    const weekLabel = format(new Date(weekStart), 'MMM d');
+    generateGrocery(
+      { recipeIds, weekLabel },
+      { onSuccess: (listId) => router.push(`/grocery/${listId}`) },
     );
   }
 
@@ -47,6 +65,19 @@ export default function PlannerScreen() {
           <Text style={styles.navArrow}>›</Text>
         </Pressable>
       </View>
+
+      {/* Generate Grocery List */}
+      <Pressable
+        style={[styles.generateBtn, isGenerating && styles.generateBtnDisabled]}
+        onPress={handleGenerateGrocery}
+        disabled={isGenerating}
+      >
+        {isGenerating ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.generateBtnText}>🛒 Generate Grocery List</Text>
+        )}
+      </Pressable>
 
       <ScrollView
         horizontal
@@ -143,6 +174,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   mealCardText: { ...Typography.caption, color: Colors.primaryDark },
+  generateBtn: {
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.sm + 2,
+    alignItems: 'center',
+    ...Shadow.sm,
+  },
+  generateBtnDisabled: { opacity: 0.6 },
+  generateBtnText: { ...Typography.bodyMedium, color: '#fff', fontWeight: '600' },
   hint: {
     ...Typography.caption,
     color: Colors.textMuted,

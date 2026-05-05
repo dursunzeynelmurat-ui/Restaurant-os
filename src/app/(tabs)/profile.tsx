@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius, Shadow } from '@constants/theme';
@@ -7,11 +8,23 @@ import { useSubscription } from '@hooks/useSubscription';
 import { signOut } from '@lib/api/auth';
 import { useAuthStore } from '@stores/authStore';
 import { SUBSCRIPTION_TIERS } from '@app-types/subscription';
+import { supabase } from '@lib/supabase';
+
+const LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'tr', label: 'Türkçe' },
+];
 
 export default function ProfileScreen() {
   const { user } = useAuth();
   const { status, remaining, limit } = useSubscription();
   const signOutStore = useAuthStore((s) => s.signOut);
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState('en');
 
   const currentTier = SUBSCRIPTION_TIERS.find((t) => t.id === status);
 
@@ -28,6 +41,79 @@ export default function ProfileScreen() {
       },
     ]);
   }
+
+  async function handleChangePassword() {
+    if (newPassword.length < 8) {
+      Alert.alert('Error', 'Password must be at least 8 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match.');
+      return;
+    }
+    setIsUpdatingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setIsUpdatingPassword(false);
+    if (error) {
+      Alert.alert('Error', error.message);
+    } else {
+      setShowPasswordModal(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      Alert.alert('Success', 'Password updated successfully.');
+    }
+  }
+
+  function handleLanguage() {
+    const options = LANGUAGES.map((l) => ({
+      text: l.label + (currentLanguage === l.code ? ' ✓' : ''),
+      onPress: async () => {
+        if (!user) return;
+        await supabase.from('users').update({ preferred_language: l.code }).eq('id', user.id);
+        setCurrentLanguage(l.code);
+      },
+    }));
+    Alert.alert('Select Language', undefined, [
+      ...options,
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
+
+  function handleDeleteAccount() {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your recipes. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Are you absolutely sure?',
+              'Type "DELETE" to confirm.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Confirm Delete',
+                  style: 'destructive',
+                  onPress: async () => {
+                    const { error } = await supabase.rpc('delete_user' as never);
+                    if (error) {
+                      Alert.alert('Error', 'Could not delete account. Please contact support.');
+                    }
+                    // onAuthStateChange will fire and redirect to welcome
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  }
+
+  const langLabel = LANGUAGES.find((l) => l.code === currentLanguage)?.label ?? 'English';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -55,7 +141,7 @@ export default function ProfileScreen() {
             {remaining} / {limit} AI imports remaining this month
           </Text>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${(remaining / limit) * 100}%` }]} />
+            <View style={[styles.progressFill, { width: `${Math.min((remaining / limit) * 100, 100)}%` }]} />
           </View>
           {status === 'free' && (
             <Pressable style={styles.upgradeButton} onPress={() => router.push('/paywall')}>
@@ -67,28 +153,23 @@ export default function ProfileScreen() {
         {/* Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
-          {[
-            { label: 'Language', value: 'English', onPress: () => {} },
-            { label: 'Notifications', value: 'On', onPress: () => {} },
-          ].map((item) => (
-            <Pressable key={item.label} style={styles.settingRow} onPress={item.onPress}>
-              <Text style={styles.settingLabel}>{item.label}</Text>
-              <View style={styles.settingRight}>
-                <Text style={styles.settingValue}>{item.value}</Text>
-                <Text style={styles.chevron}>›</Text>
-              </View>
-            </Pressable>
-          ))}
+          <Pressable style={styles.settingRow} onPress={handleLanguage}>
+            <Text style={styles.settingLabel}>Language</Text>
+            <View style={styles.settingRight}>
+              <Text style={styles.settingValue}>{langLabel}</Text>
+              <Text style={styles.chevron}>›</Text>
+            </View>
+          </Pressable>
         </View>
 
         {/* Account */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
-          <Pressable style={styles.settingRow} onPress={() => {}}>
+          <Pressable style={styles.settingRow} onPress={() => setShowPasswordModal(true)}>
             <Text style={styles.settingLabel}>Change Password</Text>
             <Text style={styles.chevron}>›</Text>
           </Pressable>
-          <Pressable style={styles.settingRow} onPress={() => {}}>
+          <Pressable style={styles.settingRow} onPress={handleDeleteAccount}>
             <Text style={[styles.settingLabel, { color: Colors.error }]}>Delete Account</Text>
             <Text style={styles.chevron}>›</Text>
           </Pressable>
@@ -100,6 +181,42 @@ export default function ProfileScreen() {
 
         <Text style={styles.version}>Recipe Organizer v1.0.0</Text>
       </ScrollView>
+
+      {/* Change Password Modal */}
+      <Modal visible={showPasswordModal} animationType="slide" presentationStyle="formSheet" onRequestClose={() => setShowPasswordModal(false)}>
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Pressable onPress={() => { setShowPasswordModal(false); setNewPassword(''); setConfirmPassword(''); }}>
+              <Text style={styles.modalCancel}>Cancel</Text>
+            </Pressable>
+            <Text style={styles.modalTitle}>Change Password</Text>
+            <Pressable onPress={handleChangePassword} disabled={isUpdatingPassword}>
+              <Text style={[styles.modalSave, isUpdatingPassword && { opacity: 0.5 }]}>
+                {isUpdatingPassword ? 'Saving...' : 'Save'}
+              </Text>
+            </Pressable>
+          </View>
+          <View style={styles.modalBody}>
+            <Text style={styles.modalLabel}>New Password</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              placeholder="At least 8 characters"
+              secureTextEntry
+              autoFocus
+            />
+            <Text style={styles.modalLabel}>Confirm Password</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="Repeat new password"
+              secureTextEntry
+            />
+          </View>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -168,4 +285,30 @@ const styles = StyleSheet.create({
   },
   signOutText: { ...Typography.bodyMedium, color: Colors.error, fontWeight: '600' },
   version: { ...Typography.caption, color: Colors.textMuted, textAlign: 'center' },
+  // Modal
+  modalContainer: { flex: 1, backgroundColor: Colors.background },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  modalCancel: { ...Typography.body, color: Colors.textSecondary },
+  modalTitle: { ...Typography.h4, color: Colors.textPrimary },
+  modalSave: { ...Typography.bodyMedium, color: Colors.primary, fontWeight: '600' },
+  modalBody: { padding: Spacing.lg, gap: Spacing.sm },
+  modalLabel: { ...Typography.bodySmallMedium, color: Colors.textPrimary, marginBottom: 4, marginTop: Spacing.sm },
+  modalInput: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 4,
+    ...Typography.body,
+    color: Colors.textPrimary,
+  },
 });
